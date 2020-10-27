@@ -12,14 +12,16 @@ public class PlayerController : MonoBehaviour
 	[Range(0, .3f)] [SerializeField] private float _Smoothing = .05f;
 	[SerializeField] private LayerMask _PlatformMask;
 	[SerializeField] private Transform _PlatformCheck;
-	private float _hDirection;
+	private float _horizontalInputDirection;
     bool _jump = false;
 	const float _PlatformCheckRadius = .05f;
 	private bool _OnPlatform;
 	private Rigidbody2D _RigidBody;
 	private string _facing = "Right";
 	public Animator _animator;
-	private Vector3 _CurrentSpeed = Vector3.zero;
+	private Vector3 _CurrentVelocity = Vector3.zero;
+	private Vector3 _CurrentAcceleration = Vector3.zero;
+	
 
 	private void Awake()
 	{
@@ -29,25 +31,18 @@ public class PlayerController : MonoBehaviour
 	private void Update() 
 	{
 		// Get Inputs
-        _hDirection = Input.GetAxisRaw("Horizontal");
+        _horizontalInputDirection = Input.GetAxisRaw("Horizontal");
         if (Input.GetButtonDown("Jump")) _jump = true;
 		if (Input.GetKeyDown("x"))
 		{
-			if (_facing == "Right") 
-			{
-				gameObject.transform.Find("HitRight").GetComponent<GameObject>().SetActive(true);
-			}
-			else 
-			{
-				gameObject.transform.Find("HitLeft").GetComponent<GameObject>().SetActive(true);
-			}
+			Attack();
 		}
 
 		// Change animation for running
-		_animator.SetFloat("Speed", Mathf.Abs(_hDirection));
+		_animator.SetFloat("Speed", Mathf.Abs(_horizontalInputDirection));
 
 		// Check if falling to change animation
-		if (_RigidBody.velocity.y < 0) _animator.SetBool("Falling", true);
+		if (_CurrentVelocity.y < 0) _animator.SetBool("Falling", true);
 		else _animator.SetBool("Falling", false);
 
 
@@ -65,24 +60,23 @@ public class PlayerController : MonoBehaviour
 			if (colliders[i].gameObject != gameObject)
 			{
 				_OnPlatform = true;
-				if (!wasGrounded)
+				if (!wasGrounded)	
 				{
-					// End Jump animation
-					_animator.SetBool("Jump", false);
+					_animator.SetBool("Jump", false);	// End Jump animation
 				}
 			}
 		}
 
 		// Call Move() and reset _jump
-        Move(_hDirection * _runSpeed * Time.fixedDeltaTime);
+        Move(_horizontalInputDirection * _runSpeed * Time.fixedDeltaTime);
         _jump = false;
 	}
 
-	public void Move(float move)
+	private void Move(float move)
 	{
 		// Movement
 		Vector3 targetVelocity = new Vector2(move * 10f, _RigidBody.velocity.y);
-		_RigidBody.velocity = Vector3.SmoothDamp(_RigidBody.velocity, targetVelocity, ref _CurrentSpeed, _Smoothing);
+		_RigidBody.velocity = Vector3.SmoothDamp(_RigidBody.velocity, targetVelocity, ref _CurrentVelocity, _Smoothing);
 
 		// Facing
 		if (move > 0) 
@@ -103,5 +97,17 @@ public class PlayerController : MonoBehaviour
 			_RigidBody.AddForce(new Vector2(0f, _JumpSpeed));
 			_animator.SetBool("Jump", true);
 		}
+	}
+
+	private void Attack() 
+	{
+		if (_facing == "Right") 
+			{
+				gameObject.transform.Find("HitRight").GetComponent<GameObject>().SetActive(true);
+			}
+			else 
+			{
+				gameObject.transform.Find("HitLeft").GetComponent<GameObject>().SetActive(true);
+			}
 	}
 }
