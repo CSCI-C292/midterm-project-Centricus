@@ -11,25 +11,22 @@ public class PlayerController : MonoBehaviour
 	[SerializeField] LayerMask platformMask;
 	[SerializeField] Transform platformChecker;
 	[SerializeField] const float platformCheckRadius = .05f;
+    [SerializeField] const float knockbackOnHit = 300f;
 	[SerializeField] Rigidbody2D rigidBody;
 	[SerializeField] Animator animator;
+	[SerializeField] GameObject axePrefab;
 
 	// Internal Variables
 	Vector3 velocity = Vector3.zero;
 	string facing = "Right";
-    float horizontalMove = 0f;
     float hInput = 0f;
 	bool grounded;
 	bool wasGrounded;
     bool jumping = false;
-	bool attacking = false;
-	bool throwing = false;
-	
-	// Awake is called when the script instance is being loaded
-	private void Awake()
-	{
-		rigidBody = GetComponent<Rigidbody2D>();
-	}
+	bool attackMelee = false;
+	bool attackThrow = false;
+	bool hasAxe = true;
+	GameObject axe;
 
 	// Update is called every frame
     private void Update() {
@@ -40,8 +37,14 @@ public class PlayerController : MonoBehaviour
 			jumping = true;
 			animator.SetBool("Jumping", true);
 		}
-		if (Input.GetButtonDown("Fire1")) attacking = true;
-		if (Input.GetButtonDown("Fire2")) throwing = true;
+		if (Input.GetButtonDown("Fire1"))
+		{
+			attackMelee = true;
+		}
+		if (Input.GetButtonDown("Fire2"))
+		{
+			attackThrow = true;
+		}
     }
 
 	// FixedUpdate is a framerate independent update for physics calculations
@@ -58,6 +61,11 @@ public class PlayerController : MonoBehaviour
         // Move and reset jump
         Move();
         jumping = false;
+
+		// Attack and reset attack variables
+		Attack();
+		attackMelee = false;
+		attackThrow = false;
 	}
 
 	// CheckPlatforms returns true if there is a platform immediately below the player
@@ -111,4 +119,32 @@ public class PlayerController : MonoBehaviour
 			GetComponent<SpriteRenderer>().flipX = false;
 		} 
 	}
+
+	// Attack handles all things attack-related
+	void Attack()
+	{
+		// Can only attack if holding axe
+		if(hasAxe)
+		{
+			// You cannot make both a melee and thrown attack at once. Melee takes precedence
+			if (attackMelee)
+			{
+				// TODO: Melee attack
+			}
+			else if (attackThrow)
+			{
+				Instantiate(axePrefab, transform.position, Quaternion.identity);
+				hasAxe = false;
+			}
+		}
+		else 
+		{
+			if (attackThrow)
+			{
+				// TODO: Activate recall event
+			}
+		}
+	}
+
+	// TODO: Recalled event, hasAxe = true.
 }
