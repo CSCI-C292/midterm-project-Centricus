@@ -4,153 +4,111 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    // Inspector-Editable Values
-    public Animator animator;
-    public LayerMask platformMask;
-    public LayerMask enemyMask;
-    public float platformCheckDistance;
-    public float hSpeed;
-    public float maxHSpeed;
-    public float jumpSpeed;
-    public float gravity;
+	// Inspector-Editable Variables
+    [SerializeField] float runSpeed = 40f;
+	[SerializeField] float jumpingSpeed = 400f;
+	[SerializeField] float smoothing = .05f;
+	[SerializeField] LayerMask platformMask;
+	[SerializeField] Transform platformChecker;
+	[SerializeField] const float platformCheckRadius = .05f;
+	[SerializeField] Rigidbody2D rigidBody;
+	[SerializeField] Animator animator;
 
-    // Internal Values
-    string facing = "Right";
-    Vector3 velocity;
-    bool grounded;
-    bool wasGrounded;
-    bool jumping;
-    bool attacking;
-    float hInput;
+	// Internal Variables
+	Vector3 velocity = Vector3.zero;
+	string facing = "Right";
+    float horizontalMove = 0f;
+    float hInput = 0f;
+	bool grounded;
+	bool wasGrounded;
+    bool jumping = false;
+	bool attacking = false;
+	bool throwing = false;
+	
+	// Awake is called when the script instance is being loaded
+	private void Awake()
+	{
+		rigidBody = GetComponent<Rigidbody2D>();
+	}
 
-
-    // Start is called before the first frame update
-    // void Start()
-    // {
-        
-    // }
-
-    // Update is called once per frame
-    void Update()
-    {
-        // Update whether the player is airborne
-        wasGrounded = grounded;
-        grounded = CheckPlatformBelow();
-
-        // Getting inputs
-        hInput = Input.GetAxis("Horizontal");
-        jumping = Input.GetButtonDown("Jump");
-
-
-        // End Jump
-        if (!wasGrounded && grounded)
-        {
-            animator.SetBool("Jumping", false);
-            animator.SetBool("Falling", false);
-        }
+	// Update is called every frame
+    private void Update() {
+		// Get Inputs
+		hInput = Input.GetAxisRaw("Horizontal");
+		if (Input.GetButtonDown("Jump")) 
+		{
+			jumping = true;
+			animator.SetBool("Jumping", true);
+		}
+		if (Input.GetButtonDown("Fire1")) attacking = true;
+		if (Input.GetButtonDown("Fire2")) throwing = true;
     }
 
-    void FixedUpdate() 
-    {
+	// FixedUpdate is a framerate independent update for physics calculations
+	private void FixedUpdate()
+	{
+		// Check for platforms and landing
+		wasGrounded = grounded;
+		grounded = CheckPlatforms();
+		if (grounded && !wasGrounded)
+		{
+			animator.SetBool("Jumping", false);
+		}
+
+        // Move and reset jump
         Move();
-        if (attacking)
-        {
-            Attack();
-        }
-    }
+        jumping = false;
+	}
 
-    // Returns true if there is a platform immediately underneath the player
-    bool CheckPlatformBelow()
-    {
-        if (Physics2D.Raycast(transform.position, Vector2.down, platformCheckDistance, platformMask))
-        {
-            return true;
-        }
-        else 
-        {
-            return false;
-        }
-    }
+	// CheckPlatforms returns true if there is a platform immediately below the player
+	bool CheckPlatforms()
+	{
+		Collider2D[] colliders = Physics2D.OverlapCircleAll(platformChecker.position, platformCheckRadius, platformMask);
+		for (int i = 0; i < colliders.Length; i++)
+		{
+			if (colliders[i].gameObject != gameObject)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
-    // Returns true if there is a platform immediately above the player
-    bool CheckPlatformAbove()
-    {
-        if (Physics2D.Raycast(transform.position, Vector2.up, platformCheckDistance, platformMask))
-        {
-            return true;
-        }
-        else 
-        {
-            return false;
-        }
-    }
+	// Move handles all movement of the player based on inputs and speed variables
+	void Move()
+	{
+		// Find and apply new velocity based on input and speed
+		Vector3 newVelocity = new Vector3(10f * hInput * runSpeed * Time.deltaTime, rigidBody.velocity.y, 0);
+		rigidBody.velocity = Vector3.SmoothDamp(rigidBody.velocity, newVelocity, ref velocity, smoothing);
 
-    void Move()
-    {
-        // TODO: Make all edits to velocity
-    
-        // Jumping
-        if (grounded && jumping)
-        {
-            velocity.y += jumpSpeed;
-            animator.SetBool("Jumping", true);
-        }
+		// Animation
+		animator.SetFloat("hSpeed", Mathf.Abs(rigidBody.velocity.x));
+		if (rigidBody.velocity.y < 0)
+		{
+			animator.SetBool("Falling", true);
+		}
+		else
+		{
+			animator.SetBool("Falling", false);
+		}
 
-        // Ceiling
-        if (velocity.y > 0 && CheckPlatformAbove())
-        {
-            velocity.y = 0;
-        }
+		// Jump (if attempting to jump while on the ground)
+		if (grounded && jumping)
+		{
+			grounded = false;
+			rigidBody.AddForce(new Vector2(0f, jumpingSpeed));
+		}
 
-        // Facing
-        if (facing == "Right" && hInput == -1)
-        {
-            facing = "Left";
-            gameObject.GetComponent<SpriteRenderer>().flipX = true;
-        }
-        if (facing == "Left" && hInput == 1)
-        {
-            facing = "Right";
-            gameObject.GetComponent<SpriteRenderer>().flipX = false;
-        }
-
-        // Horizontal movement
-        velocity.x = hInput * hSpeed;
-
-        // Speed constraints
-        if (velocity.x > maxHSpeed)
-        {
-            velocity.x = maxHSpeed;
-        }
-        if (velocity.x < -1 * maxHSpeed)
-        {
-            velocity.x = -1 * maxHSpeed;
-        }
-
-        // Gravity
-        velocity.y -= gravity;
-
-        // Stop on the ground
-        if (grounded && velocity.y < 0)
-        {
-            velocity.y = 0;
-        }
-
-        // Animation
-        if (velocity.y < 0)
-        {
-            animator.SetBool("Jumping", false);
-            animator.SetBool("Falling", true);
-        }
-        animator.SetFloat("hSpeed", Mathf.Abs(velocity.x));
-        
-        velocity.z = 0;
-        transform.position += velocity;
-
-    }
-
-    void Attack()
-    {
-        // TODO: Attack
-    }
+		// Facing
+		if (hInput == -1 && facing == "Right")
+		{
+			facing = "Left";
+			GetComponent<SpriteRenderer>().flipX = true;
+		}
+		else if (hInput == 1 && facing == "Left")
+		{
+			facing = "Right";
+			GetComponent<SpriteRenderer>().flipX = false;
+		} 
+	}
 }
