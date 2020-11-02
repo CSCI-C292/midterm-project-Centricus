@@ -77,11 +77,9 @@ public class SkullWalker : MonoBehaviour
 
     // OnCollisionEnter runs when something touches or enters the collider
     private void OnCollisionEnter2D(Collision2D other) {
-        Debug.Log(other.collider.gameObject.layer);
         // Bounce off of walls
         if (other.gameObject.layer == LayerMask.NameToLayer("Wall")){
             Flip();
-            Debug.Log(facing);
         }
         // Bounce off of enemies
         if (other.gameObject.layer == LayerMask.NameToLayer("Enemy")){

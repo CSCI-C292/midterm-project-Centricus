@@ -14,7 +14,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] const float knockbackOnHit = 300f;
 	[SerializeField] Rigidbody2D rigidBody;
 	[SerializeField] Animator animator;
-	[SerializeField] GameObject axePrefab;
+	[SerializeField] GameObject axeThrownRightPrefab;
+	[SerializeField] GameObject axeThrownLeftPrefab;
 
 	// Internal Variables
 	Vector3 velocity = Vector3.zero;
@@ -26,7 +27,7 @@ public class PlayerController : MonoBehaviour
 	bool attackMelee = false;
 	bool attackThrow = false;
 	bool hasAxe = true;
-	GameObject axe;
+	bool recalling = false;
 
 	// Update is called every frame
     private void Update() {
@@ -133,7 +134,17 @@ public class PlayerController : MonoBehaviour
 			}
 			else if (attackThrow)
 			{
-				Instantiate(axePrefab, transform.position, Quaternion.identity);
+				if (facing == "Right")
+				{
+					Instantiate(axeThrownRightPrefab, transform.position, Quaternion.identity);
+					EventManager.Recalled += Recalled;
+
+				}
+				else if (facing == "Left")
+				{
+					Instantiate(axeThrownLeftPrefab, transform.position, Quaternion.identity);
+					EventManager.Recalled += Recalled;
+				}
 				hasAxe = false;
 			}
 		}
@@ -141,10 +152,19 @@ public class PlayerController : MonoBehaviour
 		{
 			if (attackThrow)
 			{
-				// TODO: Activate recall event
+				recalling = true;
+			}
+			if (recalling)
+			{
+				EventManager.InvokeRecall(transform);
 			}
 		}
 	}
 
-	// TODO: Recalled event, hasAxe = true.
+	void Recalled()
+	{
+		hasAxe = true;
+		recalling = false;
+		EventManager.Recalled -= Recalled;
+	}
 }
