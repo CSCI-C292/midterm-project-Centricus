@@ -16,6 +16,7 @@ public class PlayerController : MonoBehaviour
 	[SerializeField] Animator animator;
 	[SerializeField] GameObject axeThrownRightPrefab;
 	[SerializeField] GameObject axeThrownLeftPrefab;
+	[SerializeField] GameObject controlScreen;
 
 	// Internal Variables
 	Vector3 velocity = Vector3.zero;
@@ -45,6 +46,17 @@ public class PlayerController : MonoBehaviour
 		if (Input.GetButtonDown("Fire2"))
 		{
 			attackThrow = true;
+		}
+		if (Input.GetKeyDown(KeyCode.Escape))
+		{
+			if (controlScreen.activeSelf)
+			{
+				controlScreen.SetActive(false);
+			}
+			else if (!controlScreen.activeSelf)
+			{
+				controlScreen.SetActive(true);
+			}
 		}
     }
 

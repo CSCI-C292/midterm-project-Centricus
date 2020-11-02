@@ -9,6 +9,7 @@ public class Axe : MonoBehaviour
     [SerializeField] Animator animator;
 
     bool recalling = false;
+    bool hasStuck = false;
     bool stuck = false;
     float speed = 60f;
     Vector3 velocity;
@@ -28,12 +29,13 @@ public class Axe : MonoBehaviour
         }
     }
     
-    private void OnTriggerStay2D(Collider2D other) {
+    private void OnTriggerEnter2D(Collider2D other) {
         if (!recalling)
         {
             if (other.gameObject.layer == LayerMask.NameToLayer("Wall") || other.gameObject.layer == LayerMask.NameToLayer("Platform"))
             {
                 stuck = true;
+                hasStuck = true;
                 gameObject.layer = LayerMask.NameToLayer("Platform");
                 animator.SetBool("Stuck", true);
                 GetComponent<BoxCollider2D>().isTrigger = false;
@@ -52,14 +54,25 @@ public class Axe : MonoBehaviour
         }
     }
 
+    private void OnTriggerStay2D(Collider2D other) {
+        if (recalling && other.gameObject.layer == LayerMask.NameToLayer("Player"))
+        {
+            EventManager.InvokeRecalled();
+            EventManager.Recall -= Recall;
+            Destroy(gameObject);
+
+        }
+    }
+
     void Recall(Transform target)
     {
-        if (!recalling)                                 
+        if (!recalling && hasStuck)                                 
         {
             animator.SetBool("Recalling", true);
-            rb2D.constraints = RigidbodyConstraints2D.None;
+            animator.SetBool("Stuck", false);
             recalling = true;
             stuck = false;
+            rb2D.constraints = RigidbodyConstraints2D.None;
             GetComponent<BoxCollider2D>().isTrigger = true;
             gameObject.layer = LayerMask.NameToLayer("Decorative");
             
@@ -70,12 +83,19 @@ public class Axe : MonoBehaviour
     // Move handles movement for the axe
     void Move() 
     {
-        if (recalling)
+        if (recalling && hasStuck)
         {
             Vector3 dir = recallTarget.position - transform.position;
             dir = dir.normalized;
             rb2D.velocity = 10f * dir * speed * Time.deltaTime;
-            // Facing depends on velocity.x
+            if (rb2D.velocity.x < 0)
+            {
+                GetComponent<SpriteRenderer>().flipX = true;
+            }
+            else if (rb2D.velocity.x > 0)
+            {
+                GetComponent<SpriteRenderer>().flipX = false;
+            }
         }
         else {
             // Find and apply new velocity based on facing and speed
