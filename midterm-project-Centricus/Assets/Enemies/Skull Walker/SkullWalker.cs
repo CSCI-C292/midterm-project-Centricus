@@ -13,37 +13,63 @@ public class SkullWalker : MonoBehaviour
 	[SerializeField] Transform platformCheckerLeft;
 	[SerializeField] Transform platformCheckerRight;
 	[SerializeField] const float platformCheckRadius = .05f;
-    [SerializeField] const float knockbackOnHit = 300f;
 	[SerializeField] Rigidbody2D rigidBody;
 	[SerializeField] Animator animator;
+    [SerializeField] int MaxHP;
+    [SerializeField] int damage;
+    [SerializeField] float knockbackWhenHit = 400f;
 
 	// Internal Variables
 	Vector3 velocity = Vector3.zero;
 	string facing = "Right";
     bool active = false;
+    int HP;
+    float timeRemaining;
+
+    // Start is called before the first frame update
+	private void Start() {
+		EventManager.DamageEnemy += TakeDamage;
+        HP = MaxHP;
+	}
 
     // FixedUpdate is a framerate independent update for physics calculations
 	private void FixedUpdate()
 	{
+        if (timeRemaining > 0)
+        {
+            timeRemaining -= Time.deltaTime;
+        }
+		Debug.Log(HP);
         if (!active)
         {
-            
-            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.left, Mathf.Infinity, ~enemyMask);
-            if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Player"))
+            if (timeRemaining <= 0)
             {
-                active = true;
-                facing = "Left";
-            }
-            hit = Physics2D.Raycast(transform.position, Vector2.right, Mathf.Infinity, ~enemyMask);
-            if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Player"))
-            {
-                active = true;
-                facing = "Right";
+                RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.left, Mathf.Infinity, ~enemyMask);
+                if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Player"))
+                {
+                    active = true;
+                    animator.SetBool("Active", true);
+                    facing = "Left";
+                }
+                hit = Physics2D.Raycast(transform.position, Vector2.right, Mathf.Infinity, ~enemyMask);
+                if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Player"))
+                {
+                    active = true;
+                    animator.SetBool("Active", true);
+                    facing = "Right";
+                }
             }
         }
         if (active)
         {
             Move();
+            if (HP <= 0)
+            {
+                active = false;
+                timeRemaining = 5;
+                HP = MaxHP;
+                animator.SetBool("Active", false);
+            }
         }
     }
 
@@ -78,12 +104,21 @@ public class SkullWalker : MonoBehaviour
     // OnCollisionEnter runs when something touches or enters the collider
     private void OnCollisionEnter2D(Collision2D other) {
         // Bounce off of walls
-        if (other.gameObject.layer == LayerMask.NameToLayer("Wall")){
-            Flip();
-        }
-        // Bounce off of enemies
-        if (other.gameObject.layer == LayerMask.NameToLayer("Enemy")){
-            Flip();
+        if (active)
+        {
+            if (other.gameObject.layer == LayerMask.NameToLayer("Wall"))
+            {
+                Flip();
+            }
+            // Bounce off of enemies
+            if (other.gameObject.layer == LayerMask.NameToLayer("Enemy"))
+            {
+                Flip();
+            }
+            if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
+            {
+                EventManager.InvokeDamagePlayer(damage, transform);
+            }
         }
     }
 
@@ -127,6 +162,17 @@ public class SkullWalker : MonoBehaviour
         {
             facing = "Right";
 			GetComponent<SpriteRenderer>().flipX = false;
+        }
+    }
+
+    void TakeDamage(int damage, Transform hitboxPosition, GameObject enemy)
+    {
+        if (GameObject.ReferenceEquals(enemy, gameObject) && active)
+        {
+            HP -= damage;
+            Vector3 direction = hitboxPosition.position - transform.position;
+            rigidBody.AddForce(~direction * 15000);
+            Debug.Log(rigidBody.velocity.y);
         }
     }
 }

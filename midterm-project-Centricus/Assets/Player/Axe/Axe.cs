@@ -11,12 +11,13 @@ public class Axe : MonoBehaviour
     bool recalling = false;
     bool hasStuck = false;
     bool stuck = false;
+    int damage = 1;
     float speed = 60f;
     Vector3 velocity;
     float smoothing = 0.05f;
     Transform recallTarget;
 
-    // Start is called on the frame when a script is enabled
+    // Start is called before the first frame update
     private void Start() {
         EventManager.Recall += Recall;
     }
@@ -30,6 +31,10 @@ public class Axe : MonoBehaviour
     }
     
     private void OnTriggerEnter2D(Collider2D other) {
+        if (other.gameObject.layer == LayerMask.NameToLayer("Enemy"))
+        {
+            EventManager.InvokeDamageEnemy(damage, transform, other.gameObject);
+        }
         if (!recalling)
         {
             if (other.gameObject.layer == LayerMask.NameToLayer("Wall") || other.gameObject.layer == LayerMask.NameToLayer("Platform"))

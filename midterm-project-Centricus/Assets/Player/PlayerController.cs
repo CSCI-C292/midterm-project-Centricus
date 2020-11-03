@@ -11,12 +11,13 @@ public class PlayerController : MonoBehaviour
 	[SerializeField] LayerMask platformMask;
 	[SerializeField] Transform platformChecker;
 	[SerializeField] const float platformCheckRadius = .05f;
-    [SerializeField] const float knockbackOnHit = 300f;
 	[SerializeField] Rigidbody2D rigidBody;
 	[SerializeField] Animator animator;
 	[SerializeField] GameObject axeThrownRightPrefab;
 	[SerializeField] GameObject axeThrownLeftPrefab;
 	[SerializeField] GameObject controlScreen;
+	[SerializeField] int HP;
+    [SerializeField] float knockbackWhenHit;
 
 	// Internal Variables
 	Vector3 velocity = Vector3.zero;
@@ -29,6 +30,11 @@ public class PlayerController : MonoBehaviour
 	bool attackThrow = false;
 	bool hasAxe = true;
 	bool recalling = false;
+
+	// Start is called before the first frame update
+	private void Start() {
+		EventManager.DamagePlayer += TakeDamage;
+	}
 
 	// Update is called every frame
     private void Update() {
@@ -178,5 +184,11 @@ public class PlayerController : MonoBehaviour
 		hasAxe = true;
 		recalling = false;
 		EventManager.Recalled -= Recalled;
+	}
+
+	void TakeDamage(int damage, Transform enemyPosition)
+	{
+		HP -= damage;
+		// TODO: Knockback!
 	}
 }
