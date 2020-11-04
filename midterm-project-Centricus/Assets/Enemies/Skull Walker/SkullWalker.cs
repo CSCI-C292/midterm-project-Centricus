@@ -171,7 +171,7 @@ public class SkullWalker : MonoBehaviour
         {
             HP -= damage;
             Vector3 direction = hitboxPosition.position - transform.position;
-            rigidBody.AddForce(~direction * 15000);
+            rigidBody.AddForce(direction * -15000);
             Debug.Log(rigidBody.velocity.y);
         }
     }

@@ -4,10 +4,12 @@ using UnityEngine;
 
 public class Axe : MonoBehaviour
 {
+    // Inspector-Editable Variables
     [SerializeField] string facing;
     [SerializeField] Rigidbody2D rb2D;
     [SerializeField] Animator animator;
 
+    // Internal Variables
     bool recalling = false;
     bool hasStuck = false;
     bool stuck = false;
@@ -16,6 +18,7 @@ public class Axe : MonoBehaviour
     Vector3 velocity;
     float smoothing = 0.05f;
     Transform recallTarget;
+    GameObject[] hitTargets;
 
     // Start is called before the first frame update
     private void Start() {
@@ -44,10 +47,6 @@ public class Axe : MonoBehaviour
                 gameObject.layer = LayerMask.NameToLayer("Platform");
                 animator.SetBool("Stuck", true);
                 GetComponent<BoxCollider2D>().isTrigger = false;
-            }
-            if (other.gameObject.layer == LayerMask.NameToLayer("Enemy"))
-            {
-                // DAMAGE ENEMY
             }
         }
         if (recalling && other.gameObject.layer == LayerMask.NameToLayer("Player"))
