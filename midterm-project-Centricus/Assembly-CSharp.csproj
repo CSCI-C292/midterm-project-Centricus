@@ -36,11 +36,19 @@
     <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
   </PropertyGroup>
   <ItemGroup>
+     <Compile Include="Assets\Door\Door.cs" />
+     <Compile Include="Assets\EndScreen.cs" />
+     <Compile Include="Assets\Enemies\Demon Walker\DemonWalker.cs" />
+     <Compile Include="Assets\Enemies\Demon Walker\Fireball\Fireball.cs" />
      <Compile Include="Assets\Enemies\Skull Walker\SkullWalker.cs" />
      <Compile Include="Assets\EventManager.cs" />
+     <Compile Include="Assets\GameOverMenu.cs" />
+     <Compile Include="Assets\HealthPurchase\HealthPurchase.cs" />
+     <Compile Include="Assets\Loot\Loot.cs" />
      <Compile Include="Assets\MainMenu\MainMenu.cs" />
      <Compile Include="Assets\Player\Axe\Axe.cs" />
      <Compile Include="Assets\Player\PlayerController.cs" />
+     <Compile Include="Assets\StatTracker.cs" />
      <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
      <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
      <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />

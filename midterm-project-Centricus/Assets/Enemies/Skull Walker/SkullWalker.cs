@@ -10,14 +10,18 @@ public class SkullWalker : MonoBehaviour
 	[SerializeField] LayerMask playerMask;
 	[SerializeField] LayerMask enemyMask;
 	[SerializeField] LayerMask platformMask;
+	[SerializeField] LayerMask obstacleMask;
 	[SerializeField] Transform platformCheckerLeft;
 	[SerializeField] Transform platformCheckerRight;
-	[SerializeField] const float platformCheckRadius = .05f;
+	[SerializeField] Transform bounceCheckerLeft;
+	[SerializeField] Transform bounceCheckerRight;
+	[SerializeField] const float checkerRadius = .05f;
 	[SerializeField] Rigidbody2D rigidBody;
 	[SerializeField] Animator animator;
     [SerializeField] int MaxHP;
     [SerializeField] int damage;
     [SerializeField] float knockbackWhenHit = 400f;
+    [SerializeField] GameObject loot;
 
 	// Internal Variables
 	Vector3 velocity = Vector3.zero;
@@ -25,6 +29,7 @@ public class SkullWalker : MonoBehaviour
     bool active = false;
     int HP;
     float timeRemaining;
+    bool hasDied = false;
 
     // Start is called before the first frame update
 	private void Start() {
@@ -39,7 +44,6 @@ public class SkullWalker : MonoBehaviour
         {
             timeRemaining -= Time.deltaTime;
         }
-		Debug.Log(HP);
         if (!active)
         {
             if (timeRemaining <= 0)
@@ -63,20 +67,13 @@ public class SkullWalker : MonoBehaviour
         if (active)
         {
             Move();
-            if (HP <= 0)
-            {
-                active = false;
-                timeRemaining = 5;
-                HP = MaxHP;
-                animator.SetBool("Active", false);
-            }
         }
     }
 
-    // CheckPlatformsLeft return true if there is a platform to enemy's left
-    bool CheckPlatformsLeft()
+    // CheckBouncerLeft returns true if there is something the enemy should turn away from
+    bool CheckBouncerLeft()
     {
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(platformCheckerLeft.position, platformCheckRadius, platformMask);
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(bounceCheckerLeft.position, checkerRadius, obstacleMask);
 		for (int i = 0; i < colliders.Length; i++)
 		{
 			if (colliders[i].gameObject != gameObject)
@@ -87,10 +84,38 @@ public class SkullWalker : MonoBehaviour
 		return false;
     }
 
-    // CheckPlatformsRight return true if there is a platform to enemy's right
+    // CheckBouncerRight returns true if there is something the enemy should turn away from
+    bool CheckBouncerRight()
+    {
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(bounceCheckerRight.position, checkerRadius, obstacleMask);
+		for (int i = 0; i < colliders.Length; i++)
+		{
+			if (colliders[i].gameObject != gameObject)
+			{
+				return true;
+			}
+		}
+		return false;
+    } 
+
+    // CheckPlatformsLeft returns true if there is a platform to enemy's left
+    bool CheckPlatformsLeft()
+    {
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(platformCheckerLeft.position, checkerRadius, platformMask);
+		for (int i = 0; i < colliders.Length; i++)
+		{
+			if (colliders[i].gameObject != gameObject)
+			{
+				return true;
+			}
+		}
+		return false;
+    }
+
+    // CheckPlatformsRight returns true if there is a platform to enemy's right
     bool CheckPlatformsRight()
     {
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(platformCheckerRight.position, platformCheckRadius, platformMask);
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(platformCheckerRight.position, checkerRadius, platformMask);
 		for (int i = 0; i < colliders.Length; i++)
 		{
 			if (colliders[i].gameObject != gameObject)
@@ -126,11 +151,11 @@ public class SkullWalker : MonoBehaviour
 	void Move()
 	{
         // Bounce off edges of platform
-		if (facing == "Right" && !CheckPlatformsRight())
+		if (facing == "Right" && (!CheckPlatformsRight() || CheckBouncerRight()))
 		{
 			Flip();
 		}
-		else if (facing == "Left" && !CheckPlatformsLeft())
+		else if (facing == "Left" && (!CheckPlatformsLeft()|| CheckBouncerLeft()))
 		{
 			Flip();
 		} 
@@ -172,7 +197,24 @@ public class SkullWalker : MonoBehaviour
             HP -= damage;
             Vector3 direction = hitboxPosition.position - transform.position;
             rigidBody.AddForce(direction * -15000);
-            Debug.Log(rigidBody.velocity.y);
+            // Death
+            if (HP <= 0) 
+            { 
+                Die(); 
+            }
         }
+    }
+
+    void Die()
+    {
+        if (!hasDied)
+        {
+            Instantiate(loot, transform.position, Quaternion.identity);
+        }
+        active = false;
+        hasDied = true;
+        timeRemaining = 5;
+        HP = MaxHP;
+        animator.SetBool("Active", false);
     }
 }

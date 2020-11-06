@@ -18,7 +18,7 @@ public class Axe : MonoBehaviour
     Vector3 velocity;
     float smoothing = 0.05f;
     Transform recallTarget;
-    GameObject[] hitTargets;
+    List<GameObject> hitTargets = new List<GameObject>();
 
     // Start is called before the first frame update
     private void Start() {
@@ -33,41 +33,58 @@ public class Axe : MonoBehaviour
         }
     }
     
+    // Check collisions (only applies while axe not stuck in a wall/platform)
     private void OnTriggerEnter2D(Collider2D other) {
-        if (other.gameObject.layer == LayerMask.NameToLayer("Enemy"))
+        if (other.gameObject.layer == LayerMask.NameToLayer("Enemy") 
+            && !hitTargets.Contains(other.gameObject))
         {
             EventManager.InvokeDamageEnemy(damage, transform, other.gameObject);
         }
         if (!recalling)
         {
-            if (other.gameObject.layer == LayerMask.NameToLayer("Wall") || other.gameObject.layer == LayerMask.NameToLayer("Platform"))
+            if (other.gameObject.layer == LayerMask.NameToLayer("Wall") 
+                || other.gameObject.layer == LayerMask.NameToLayer("Platform"))
             {
+                // Avoid bugs by picking up the axe if the player is touching it upon wall collision
+                // if (GetComponent<BoxCollider2D>().IsTouchingLayers(LayerMask.NameToLayer("Player")))
+                // {
+                //     PickUp();
+                // }
+                // Change relevant values
                 stuck = true;
                 hasStuck = true;
                 gameObject.layer = LayerMask.NameToLayer("Platform");
                 animator.SetBool("Stuck", true);
                 GetComponent<BoxCollider2D>().isTrigger = false;
+                // Clear hitTargets
+                hitTargets.Clear();
             }
         }
         if (recalling && other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
-            EventManager.InvokeRecalled();
-            EventManager.Recall -= Recall;
-            Destroy(gameObject);
-
+            PickUp();
         }
     }
 
+    // This redundancy was necessary to fix a bug where the axe would not return to the player
     private void OnTriggerStay2D(Collider2D other) {
         if (recalling && other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
-            EventManager.InvokeRecalled();
-            EventManager.Recall -= Recall;
-            Destroy(gameObject);
-
+            PickUp();
         }
     }
 
+    // PickUp returns the axe to the player, destroying the axe GameObject
+    void PickUp()
+    {
+        hitTargets.Clear();
+        EventManager.InvokeRecalled();
+        EventManager.Recall -= Recall;
+        Destroy(gameObject);
+    }
+
+    // While the Recall event is being invoked, this function causes the axe to
+    // return to the player.
     void Recall(Transform target)
     {
         if (!recalling && hasStuck)                                 

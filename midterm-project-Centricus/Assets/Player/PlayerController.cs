@@ -17,7 +17,7 @@ public class PlayerController : MonoBehaviour
 	[SerializeField] GameObject axeThrownLeftPrefab;
 	[SerializeField] GameObject controlScreen;
 	[SerializeField] int HP;
-    [SerializeField] float knockbackWhenHit;
+    [SerializeField] float knockbackWhenHit = 400f;
 
 	// Internal Variables
 	Vector3 velocity = Vector3.zero;
@@ -30,14 +30,24 @@ public class PlayerController : MonoBehaviour
 	bool attackThrow = false;
 	bool hasAxe = true;
 	bool recalling = false;
+	float invincibilityTime;
+	int score = 0;
 
 	// Start is called before the first frame update
 	private void Start() {
 		EventManager.DamagePlayer += TakeDamage;
+		EventManager.HealPlayer += Heal;
+		EventManager.RemoveMoney += RemoveMoney;
+		HP = StatTracker.HP;
+		score = StatTracker.score;
+
 	}
 
 	// Update is called every frame
     private void Update() {
+		// Update globals
+		StatTracker.HP = HP;
+		StatTracker.score = score;
 		// Get Inputs
 		hInput = Input.GetAxisRaw("Horizontal");
 		if (Input.GetButtonDown("Jump")) 
@@ -69,6 +79,17 @@ public class PlayerController : MonoBehaviour
 	// FixedUpdate is a framerate independent update for physics calculations
 	private void FixedUpdate()
 	{
+		// Handle UI
+		Transform ui = transform.Find("UI").Find("UI_Panel");
+		ui.Find("HP").GetComponent<TMPro.TextMeshProUGUI>().text = "HP: " + HP;
+		ui.Find("SCORE").GetComponent<TMPro.TextMeshProUGUI>().text = "SCORE: " + score;
+
+		// Reduce I-frames
+		if (invincibilityTime > 0)
+		{
+			invincibilityTime -= Time.deltaTime;
+		}
+
 		// Check for platforms and landing
 		wasGrounded = grounded;
 		grounded = CheckPlatforms();
@@ -99,6 +120,13 @@ public class PlayerController : MonoBehaviour
 			}
 		}
 		return false;
+	}
+
+	private void OnCollisionEnter2D(Collision2D other) {
+		if (other.gameObject.layer == LayerMask.NameToLayer("Loot"))
+		{
+			score += other.gameObject.GetComponent<Loot>().PickUp();
+		}
 	}
 
 	// Move handles all movement of the player based on inputs and speed variables
@@ -188,7 +216,34 @@ public class PlayerController : MonoBehaviour
 
 	void TakeDamage(int damage, Transform enemyPosition)
 	{
-		HP -= damage;
-		// TODO: Knockback!
+		if (invincibilityTime <= 0)
+		{
+			HP -= damage;
+			if (HP <= 0)
+			{
+				Die();
+			}
+			Vector3 direction = enemyPosition.position - transform.position;
+			rigidBody.AddForce(direction * -1 * knockbackWhenHit);
+			invincibilityTime = 3;
+		}
+	}
+
+	void Die()
+	{
+		transform.Find("GameOverScreen").gameObject.SetActive(true);
+		transform.Find("GameOverScreen").Find("Score Text").gameObject.GetComponent<TMPro.TextMeshProUGUI>().text = "Score: " + score;
+		EventManager.DamagePlayer -= TakeDamage;
+		EventManager.HealPlayer -= Heal;
+	}
+
+	void Heal(int healing)
+	{
+		HP += healing;
+	}
+
+	void RemoveMoney(int amount)
+	{
+		score -= amount/2;
 	}
 }
